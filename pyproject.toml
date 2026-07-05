@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "django-stocks"
+version = "0.1.0"
+description = "Moteur universel de gestion des articles et des mouvements de stock pour Django"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "EduSaaS"}
+]
+classifiers = [
+    "Framework :: Django",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "django>=4.2"
+]
+
+[tool.setuptools.packages.find]
+include = ["stocks*"]
