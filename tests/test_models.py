@@ -3,7 +3,7 @@ from django.test import TestCase
 from stocks.models import (
     Article, TypeArticle, CategorieArticle, Unite, ComportementArticle,
     Depot, Emplacement, Lot, NumeroSerie, MouvementStock,
-    Inventaire, LigneInventaire, Valorisation, JournalStock,
+    Inventaire, LigneInventaire, Valorisation,
     Nomenclature, ComposantNomenclature,
 )
 from stocks.constants import COMPORTEMENT_PAR_DEFAUT
@@ -99,6 +99,20 @@ class LotModelTest(TestCase):
         self.assertEqual(str(lot), "Lot LOT-2026-001 — FAR")
         self.assertIn(lot, self.article.lots.all())
 
+    def test_numeroserie(self):
+        lot = Lot.objects.create(
+            numero_lot="LOT-NS-001",
+            article=self.article,
+            quantite_initiale=1,
+            quantite_restante=1,
+        )
+        depot = Depot.objects.create(code="DEP", libelle="Dépôt")
+        ns = NumeroSerie.objects.create(
+            numero="SN-001", article=self.article,
+            lot=lot, depot_actuel=depot,
+        )
+        self.assertEqual(str(ns), "SN-001")
+
 
 class MouvementStockModelTest(TestCase):
     def setUp(self):
@@ -115,11 +129,11 @@ class MouvementStockModelTest(TestCase):
     def test_creation_mouvement(self):
         mvt = MouvementStock.objects.create(
             reference="MVT-001",
-            type_mouvement="ENTREE",
+            nature="ENTREE",
             article=self.article,
             depot=self.depot,
             quantite=100,
-            date_mouvement="2026-07-05 12:00:00",
+            date_mouvement="2026-07-05 12:00:00+00:00",
         )
         self.assertIn("MVT-001", str(mvt))
         self.assertFalse(mvt.valide)

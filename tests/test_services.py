@@ -81,14 +81,18 @@ class MouvementStockServiceTest(TestCase):
             article=self.article, depot=self.depot_a,
             quantite=50, prix_unitaire=Decimal("1.00"),
         )
-        MouvementStockService.transferer(
+        sortie, entree = MouvementStockService.transferer(
             article=self.article,
             depot_source=self.depot_a,
             depot_destination=self.depot_b,
             quantite=20,
         )
+        self.assertEqual(sortie.nature, "SORTIE")
+        self.assertEqual(entree.nature, "TRANSFERT")
         stock_a = ArticleService.get_stock_disponible(self.article, self.depot_a)
+        stock_b = ArticleService.get_stock_disponible(self.article, self.depot_b)
         self.assertEqual(stock_a, Decimal("30"))
+        self.assertEqual(stock_b, Decimal("20"))
 
     def test_journal_ecritures(self):
         MouvementStockService.entree_stock(

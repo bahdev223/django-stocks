@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 *.pyo
+*.cpython-*.pyc
 .env
 *.egg-info/
 dist/

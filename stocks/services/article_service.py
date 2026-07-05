@@ -52,12 +52,12 @@ class ArticleService:
         from stocks.models import MouvementStock
         entrees = MouvementStock.objects.filter(
             article=article, depot=depot, valide=True,
-            type_mouvement__in=["ENTREE", "TRANSFERT"],
+            nature__in=["ENTREE", "TRANSFERT", "RETOUR", "PRODUCTION"],
         ).aggregate(total=models.Sum("quantite"))["total"] or Decimal("0")
 
         sorties = MouvementStock.objects.filter(
             article=article, depot=depot, valide=True,
-            type_mouvement__in=["SORTIE", "REBUT"],
+            nature__in=["SORTIE", "REBUT", "CONSOMMATION"],
         ).aggregate(total=models.Sum("quantite"))["total"] or Decimal("0")
 
         return entrees - abs(sorties)
@@ -68,12 +68,12 @@ class ArticleService:
         from stocks.models import MouvementStock
         entrees = MouvementStock.objects.filter(
             article=article, valide=True,
-            type_mouvement__in=["ENTREE", "TRANSFERT"],
+            nature__in=["ENTREE", "TRANSFERT", "RETOUR", "PRODUCTION"],
         ).aggregate(total=Sum("quantite"))["total"] or Decimal("0")
 
         sorties = MouvementStock.objects.filter(
             article=article, valide=True,
-            type_mouvement__in=["SORTIE", "REBUT"],
+            nature__in=["SORTIE", "REBUT", "CONSOMMATION"],
         ).aggregate(total=Sum("quantite"))["total"] or Decimal("0")
 
         return entrees - sorties

@@ -21,8 +21,8 @@ class JournalStock(models.Model):
         verbose_name="Dépôt",
     )
     date = models.DateTimeField(verbose_name="Date")
-    type_mouvement = models.CharField(
-        max_length=20, verbose_name="Type de mouvement",
+    nature = models.CharField(
+        max_length=20, verbose_name="Nature du mouvement",
     )
     quantite = models.DecimalField(
         max_digits=18, decimal_places=6, verbose_name="Quantité",
@@ -53,4 +53,4 @@ class JournalStock(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.date} — {self.article.code} — {self.type_mouvement} ({self.quantite})"
+        return f"{self.date} — {self.article.code} — {self.nature} ({self.quantite})"

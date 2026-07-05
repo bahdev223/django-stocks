@@ -1,5 +1,5 @@
 from django.db import models
-from stocks.constants import StatutDocument
+from stocks.constants import StatutInventaire
 
 
 class Inventaire(models.Model):
@@ -13,8 +13,8 @@ class Inventaire(models.Model):
     date_inventaire = models.DateField(verbose_name="Date d'inventaire")
     statut = models.CharField(
         max_length=20,
-        choices=StatutDocument.choices,
-        default=StatutDocument.BROUILLON,
+        choices=StatutInventaire.choices,
+        default=StatutInventaire.BROUILLON,
         verbose_name="Statut",
     )
     realise_par = models.CharField(

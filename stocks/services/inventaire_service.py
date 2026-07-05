@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 from stocks.models import Inventaire, LigneInventaire, MouvementStock, Article, Depot
-from stocks.constants import StatutDocument
+from stocks.constants import StatutInventaire
 
 
 class InventaireService:
@@ -45,7 +45,7 @@ class InventaireService:
     def valider_inventaire(inventaire, created_by=""):
         from stocks.services.mouvement_service import MouvementStockService
 
-        if inventaire.statut == StatutDocument.VALIDE:
+        if inventaire.statut == StatutInventaire.VALIDE:
             return inventaire
 
         for ligne in inventaire.lignes.select_related("article", "article__comportement"):
@@ -74,6 +74,6 @@ class InventaireService:
                     created_by=created_by,
                 )
 
-        inventaire.statut = StatutDocument.VALIDE
+        inventaire.statut = StatutInventaire.VALIDE
         inventaire.save(update_fields=["statut"])
         return inventaire

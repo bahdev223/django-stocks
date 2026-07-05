@@ -17,9 +17,17 @@ class NatureMouvement(models.TextChoices):
     ENTREE = "ENTREE", "Entrée"
     SORTIE = "SORTIE", "Sortie"
     TRANSFERT = "TRANSFERT", "Transfert"
-    INVENTAIRE = "INVENTAIRE", "Inventaire"
-    REBUT = "REBUT", "Mise au rebut"
     AJUSTEMENT = "AJUSTEMENT", "Ajustement"
+    INVENTAIRE = "INVENTAIRE", "Inventaire"
+    PRODUCTION = "PRODUCTION", "Production"
+    CONSOMMATION = "CONSOMMATION", "Consommation"
+    RETOUR = "RETOUR", "Retour"
+    REBUT = "REBUT", "Mise au rebut"
+
+
+class SensMouvement(models.TextChoices):
+    ENTREE = "ENTREE", "Entrée"
+    SORTIE = "SORTIE", "Sortie"
 
 
 class MethodeValorisation(models.TextChoices):
@@ -27,13 +35,6 @@ class MethodeValorisation(models.TextChoices):
     FIFO = "FIFO", "Premier entré, premier sorti"
     DMP = "DMP", "Dernier prix d'achat"
     NONE = "NONE", "Aucune valorisation"
-
-
-class StatutDocument(models.TextChoices):
-    BROUILLON = "BROUILLON", "Brouillon"
-    CONFIRME = "CONFIRME", "Confirmé"
-    VALIDE = "VALIDE", "Validé"
-    ANNULE = "ANNULE", "Annulé"
 
 
 class CategorieUnite(models.TextChoices):
@@ -47,6 +48,13 @@ class CategorieUnite(models.TextChoices):
     AUTRE = "AUTRE", "Autre"
 
 
+class StatutInventaire(models.TextChoices):
+    BROUILLON = "BROUILLON", "Brouillon"
+    EN_COURS = "EN_COURS", "En cours"
+    VALIDE = "VALIDE", "Validé"
+    ANNULE = "ANNULE", "Annulé"
+
+
 COMPORTEMENT_PAR_DEFAUT = {
     "stockable": True,
     "vendable": True,
@@ -55,4 +63,17 @@ COMPORTEMENT_PAR_DEFAUT = {
     "lot_obligatoire": False,
     "numero_serie": False,
     "inventoriable": True,
+}
+
+
+SENS_PAR_NATURE = {
+    NatureMouvement.ENTREE: SensMouvement.ENTREE,
+    NatureMouvement.SORTIE: SensMouvement.SORTIE,
+    NatureMouvement.TRANSFERT: SensMouvement.SORTIE,
+    NatureMouvement.AJUSTEMENT: SensMouvement.ENTREE,
+    NatureMouvement.INVENTAIRE: SensMouvement.ENTREE,
+    NatureMouvement.PRODUCTION: SensMouvement.ENTREE,
+    NatureMouvement.CONSOMMATION: SensMouvement.SORTIE,
+    NatureMouvement.RETOUR: SensMouvement.ENTREE,
+    NatureMouvement.REBUT: SensMouvement.SORTIE,
 }

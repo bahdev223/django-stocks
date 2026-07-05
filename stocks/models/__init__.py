@@ -7,13 +7,7 @@ from stocks.models.article import (
 )
 from stocks.models.depot import Depot, Emplacement
 from stocks.models.lot import Lot, NumeroSerie
-from stocks.models.mouvement import (
-    MouvementStock,
-    BonCommande,
-    BonReception,
-    BonLivraison,
-    LigneMouvement,
-)
+from stocks.models.mouvement import MouvementStock
 from stocks.models.inventaire import Inventaire, LigneInventaire
 from stocks.models.valorisation import Valorisation
 from stocks.models.journal import JournalStock
@@ -30,10 +24,6 @@ __all__ = [
     "Lot",
     "NumeroSerie",
     "MouvementStock",
-    "BonCommande",
-    "BonReception",
-    "BonLivraison",
-    "LigneMouvement",
     "Inventaire",
     "LigneInventaire",
     "Valorisation",

@@ -2,7 +2,7 @@ from django.contrib import admin
 from stocks.models import (
     Article, TypeArticle, CategorieArticle, Unite, ComportementArticle,
     Depot, Emplacement, Lot, NumeroSerie,
-    MouvementStock, BonCommande, BonReception, BonLivraison,
+    MouvementStock,
     Inventaire, LigneInventaire,
     Valorisation, JournalStock,
     Nomenclature, ComposantNomenclature,
@@ -34,11 +34,6 @@ class ComportementArticleAdmin(admin.ModelAdmin):
         "perissable", "lot_obligatoire", "numero_serie", "inventoriable",
     ]
     search_fields = ["id"]
-
-
-class ComportementArticleInline(admin.TabularInline):
-    model = ComportementArticle
-    extra = 0
 
 
 @admin.register(Article)
@@ -84,34 +79,22 @@ class NumeroSerieAdmin(admin.ModelAdmin):
     search_fields = ["numero", "article__code"]
 
 
-@admin.register(BonCommande)
-class BonCommandeAdmin(admin.ModelAdmin):
-    list_display = ["reference", "fournisseur", "date_commande", "statut"]
-    list_filter = ["statut"]
-    search_fields = ["reference", "fournisseur"]
-
-
-@admin.register(BonReception)
-class BonReceptionAdmin(admin.ModelAdmin):
-    list_display = ["reference", "bon_commande", "date_reception"]
-    search_fields = ["reference"]
-
-
-@admin.register(BonLivraison)
-class BonLivraisonAdmin(admin.ModelAdmin):
-    list_display = ["reference", "destinataire", "date_livraison"]
-    search_fields = ["reference", "destinataire"]
-
-
 @admin.register(MouvementStock)
 class MouvementStockAdmin(admin.ModelAdmin):
     list_display = [
-        "reference", "type_mouvement", "article", "depot",
+        "reference", "nature", "article", "depot",
         "quantite", "prix_unitaire", "date_mouvement", "valide",
+        "source_summary",
     ]
-    list_filter = ["type_mouvement", "valide", "date_mouvement"]
+    list_filter = ["nature", "valide", "date_mouvement"]
     search_fields = ["reference", "article__code", "libelle"]
     autocomplete_fields = ["article", "depot", "lot"]
+
+    def source_summary(self, obj):
+        if obj.source:
+            return f"{obj.source._meta.verbose_name} #{obj.source_object_id}"
+        return ""
+    source_summary.short_description = "Source"
 
 
 class LigneInventaireInline(admin.TabularInline):
@@ -141,10 +124,10 @@ class ValorisationAdmin(admin.ModelAdmin):
 @admin.register(JournalStock)
 class JournalStockAdmin(admin.ModelAdmin):
     list_display = [
-        "date", "article", "depot", "type_mouvement",
+        "date", "article", "depot", "nature",
         "quantite", "stock_avant", "stock_apres",
     ]
-    list_filter = ["type_mouvement", "date"]
+    list_filter = ["nature", "date"]
     search_fields = ["article__code", "libelle"]
     autocomplete_fields = ["article", "depot"]
 
