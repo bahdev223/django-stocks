@@ -4,7 +4,7 @@ from stocks.models import (
     Depot, Emplacement, Lot, NumeroSerie, SourceOperation,
     MouvementStock,
     Inventaire, LigneInventaire,
-    Valorisation, JournalStock,
+    Valorisation, CoucheValorisation, JournalStock,
     Nomenclature, ComposantNomenclature,
 )
 
@@ -128,6 +128,16 @@ class ValorisationAdmin(admin.ModelAdmin):
         "cout_unitaire_moyen", "quantite_totale", "valeur_totale",
     ]
     autocomplete_fields = ["article", "depot"]
+
+
+@admin.register(CoucheValorisation)
+class CoucheValorisationAdmin(admin.ModelAdmin):
+    list_display = [
+        "article", "depot", "quantite_restante",
+        "prix_unitaire", "date_entree",
+    ]
+    list_filter = ["date_entree"]
+    autocomplete_fields = ["article", "depot", "mouvement", "lot"]
 
 
 @admin.register(JournalStock)

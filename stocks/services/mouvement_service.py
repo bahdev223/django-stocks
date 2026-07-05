@@ -3,6 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 from stocks.constants import NatureMouvement
 from stocks.models import MouvementStock, SourceOperation, Valorisation, JournalStock
+from stocks.valorisation import ValuationRegistry
 
 
 class MouvementStockService:
@@ -53,7 +54,7 @@ class MouvementStockService:
         mouvement.save()
         _journaliser(mouvement, created_by)
         if prix_unitaire:
-            _mettre_a_jour_valorisation(article, depot, qte, prix_unitaire)
+            _mettre_a_jour_valorisation(article, depot, qte, prix_unitaire, mouvement=mouvement)
         return mouvement
 
     @staticmethod
@@ -107,6 +108,12 @@ class MouvementStockService:
             mouvement.source = source
         mouvement.save()
         _journaliser(mouvement, created_by)
+        strategy = ValuationRegistry.get_strategy(article.methode_valorisation)
+        valorisation, _ = Valorisation.objects.get_or_create(
+            article=article, depot=depot,
+            defaults={"methode": article.methode_valorisation},
+        )
+        strategy.enregistrer_sortie(valorisation, qte, mouvement=mouvement)
         return mouvement
 
     @staticmethod
@@ -201,7 +208,8 @@ def _journaliser(mouvement, created_by=""):
     )
 
 
-def _mettre_a_jour_valorisation(article, depot, quantite, prix_unitaire):
+def _mettre_a_jour_valorisation(article, depot, quantite, prix_unitaire, mouvement=None):
+    strategy = ValuationRegistry.get_strategy(article.methode_valorisation)
     valorisation, created = Valorisation.objects.get_or_create(
         article=article,
         depot=depot,
@@ -212,5 +220,7 @@ def _mettre_a_jour_valorisation(article, depot, quantite, prix_unitaire):
             "valeur_totale": quantite * prix_unitaire,
         },
     )
-    if not created:
-        valorisation.mettre_a_jour_pmp(quantite, prix_unitaire)
+    if created:
+        strategy.initialiser(valorisation, quantite, prix_unitaire)
+    else:
+        strategy.enregistrer_entree(valorisation, quantite, prix_unitaire, mouvement=mouvement)

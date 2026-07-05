@@ -19,9 +19,10 @@ class Valorisation(models.Model):
         choices=[
             ("PMP", "Prix Moyen Pondéré"),
             ("FIFO", "Premier entré, premier sorti"),
-            ("DMP", "Dernier prix d'achat"),
+            ("STANDARD", "Coût standard"),
             ("NONE", "Aucune"),
         ],
+        default="PMP",
         verbose_name="Méthode",
     )
     cout_unitaire_moyen = models.DecimalField(
@@ -46,16 +47,54 @@ class Valorisation(models.Model):
         unique_together = [["article", "depot"]]
 
     def __str__(self):
-        return f"{self.article.code} @ {self.depot.code} — PMP={self.cout_unitaire_moyen}"
+        return f"{self.article.code} @ {self.depot.code} — {self.methode}"
 
-    def mettre_a_jour_pmp(self, quantite_entree, prix_unitaire_entree):
-        ancienne_valeur = self.quantite_totale * self.cout_unitaire_moyen
-        nouvelle_valeur = quantite_entree * prix_unitaire_entree
-        nouvelle_quantite = self.quantite_totale + quantite_entree
-        if nouvelle_quantite > 0:
-            self.cout_unitaire_moyen = (
-                ancienne_valeur + nouvelle_valeur
-            ) / nouvelle_quantite
-        self.quantite_totale = nouvelle_quantite
-        self.valeur_totale = self.quantite_totale * self.cout_unitaire_moyen
-        self.save(update_fields=["cout_unitaire_moyen", "quantite_totale", "valeur_totale"])
+
+class CoucheValorisation(models.Model):
+    """Couche FIFO — chaque entrée en stock crée une couche avec son prix."""
+    article = models.ForeignKey(
+        "Article",
+        on_delete=models.CASCADE,
+        related_name="couches_valorisation",
+        verbose_name="Article",
+    )
+    depot = models.ForeignKey(
+        "Depot",
+        on_delete=models.CASCADE,
+        related_name="couches_valorisation",
+        verbose_name="Dépôt",
+    )
+    quantite_restante = models.DecimalField(
+        max_digits=18, decimal_places=6, verbose_name="Quantité restante",
+    )
+    prix_unitaire = models.DecimalField(
+        max_digits=18, decimal_places=6, verbose_name="Prix unitaire",
+    )
+    date_entree = models.DateTimeField(verbose_name="Date d'entrée")
+    mouvement = models.ForeignKey(
+        "MouvementStock",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="couches_valorisation",
+        verbose_name="Mouvement d'origine",
+    )
+    lot = models.ForeignKey(
+        "Lot",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="couches_valorisation",
+        verbose_name="Lot",
+    )
+
+    class Meta:
+        verbose_name = "Couche de valorisation"
+        verbose_name_plural = "Couches de valorisation"
+        ordering = ["date_entree", "id"]
+        indexes = [
+            models.Index(fields=["article", "depot", "date_entree"]),
+        ]
+
+    def __str__(self):
+        return f"{self.article.code} @ {self.depot.code} — {self.quantite_restante} x {self.prix_unitaire}"

@@ -164,6 +164,66 @@ python runtests.py
 
 ---
 
+---
+
+## Valorisation (Strategy Pattern)
+
+Le moteur de valorisation utilise le **Strategy Pattern** — chaque article peut utiliser une méthode différente, et le cœur du package n'a pas besoin de les connaître.
+
+### Stratégies intégrées
+
+| Code | Stratégie | Principe |
+|------|-----------|----------|
+| `PMP` | Prix Moyen Pondéré | Le coût unitaire est la moyenne pondérée de tous les achats |
+| `FIFO` | Premier entré, premier sorti | Les sorties consomment les couches les plus anciennes |
+| `STANDARD` | Coût standard | Le prix unitaire est fixe, défini à l'initialisation |
+
+### Ajouter une stratégie personnalisée
+
+Dans `settings.py` :
+
+```python
+STOCKS_VALUATION_STRATEGIES = {
+    "LIFO": "mon_projet.strategies.lifo.LIFOStrategy",
+}
+```
+
+La stratégie doit implémenter l'interface `BaseValuationStrategy` :
+
+```python
+from stocks.valorisation.base import BaseValuationStrategy
+
+class LIFOStrategy(BaseValuationStrategy):
+    method_code = "LIFO"
+    method_name = "Dernier entré, premier sorti"
+
+    @classmethod
+    def enregistrer_entree(cls, valorisation, quantite, prix_unitaire, mouvement=None):
+        ...
+
+    @classmethod
+    def enregistrer_sortie(cls, valorisation, quantite, mouvement=None):
+        ...
+
+    @classmethod
+    def get_cout_unitaire(cls, valorisation):
+        ...
+
+    @classmethod
+    def get_valeur_totale(cls, valorisation):
+        ...
+
+    @classmethod
+    def initialiser(cls, valorisation, quantite, prix_unitaire):
+        ...
+```
+
+### Extensibilité
+
+Le `ValuationRegistry` charge d'abord les stratégies par défaut (PMP, FIFO, STANDARD), puis fusionne avec celles déclarées dans `STOCKS_VALUATION_STRATEGIES`. Un projet peut ainsi ajouter sa propre méthode de valorisation sans jamais modifier `django-stocks`.
+
+---
+
 ## Licence
 
 MIT
