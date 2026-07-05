@@ -38,6 +38,16 @@ class CategorieUnite(models.TextChoices):
     AUTRE = "AUTRE", "Autre"
 
 
+class FamilleSource(models.TextChoices):
+    APPROVISIONNEMENT = "APPROVISIONNEMENT", "Approvisionnement"
+    DISTRIBUTION = "DISTRIBUTION", "Distribution"
+    PRODUCTION = "PRODUCTION", "Production"
+    LOGISTIQUE = "LOGISTIQUE", "Logistique"
+    INCIDENTS = "INCIDENTS", "Incidents"
+    TECHNIQUE = "TECHNIQUE", "Technique"
+    AUTRE = "AUTRE", "Autre"
+
+
 class StatutInventaire(models.TextChoices):
     BROUILLON = "BROUILLON", "Brouillon"
     EN_COURS = "EN_COURS", "En cours"
@@ -46,25 +56,25 @@ class StatutInventaire(models.TextChoices):
 
 
 SOURCES_SYSTEME = {
-    "ACHAT": "Achat",
-    "VENTE": "Vente",
-    "PRODUCTION": "Production",
-    "CONSOMMATION_INTERNE": "Consommation interne",
-    "TRANSFERT": "Transfert",
-    "INVENTAIRE": "Inventaire",
-    "AJUSTEMENT": "Ajustement",
-    "RETOUR_CLIENT": "Retour client",
-    "RETOUR_FOURNISSEUR": "Retour fournisseur",
-    "DON": "Don",
-    "CASSE": "Casse",
-    "PERTE": "Perte",
-    "VOL": "Vol",
-    "PEREMPTION": "Péremption",
-    "CORRECTION": "Correction",
-    "INITIALISATION": "Initialisation",
-    "IMPORT": "Import",
-    "EXPORT": "Export",
-    "AUTRE": "Autre",
+    "ACHAT": {"nom": "Achat", "famille": FamilleSource.APPROVISIONNEMENT},
+    "RETOUR_FOURNISSEUR": {"nom": "Retour fournisseur", "famille": FamilleSource.APPROVISIONNEMENT},
+    "DON_RECU": {"nom": "Don reçu", "famille": FamilleSource.APPROVISIONNEMENT},
+    "IMPORT": {"nom": "Import", "famille": FamilleSource.APPROVISIONNEMENT},
+    "INITIALISATION": {"nom": "Initialisation", "famille": FamilleSource.APPROVISIONNEMENT},
+    "VENTE": {"nom": "Vente", "famille": FamilleSource.DISTRIBUTION},
+    "DON": {"nom": "Don", "famille": FamilleSource.DISTRIBUTION},
+    "EXPORT": {"nom": "Export", "famille": FamilleSource.DISTRIBUTION},
+    "PRODUCTION": {"nom": "Production", "famille": FamilleSource.PRODUCTION},
+    "CONSOMMATION_PRODUCTION": {"nom": "Consommation production", "famille": FamilleSource.PRODUCTION},
+    "TRANSFERT": {"nom": "Transfert", "famille": FamilleSource.LOGISTIQUE},
+    "INVENTAIRE": {"nom": "Inventaire", "famille": FamilleSource.LOGISTIQUE},
+    "AJUSTEMENT": {"nom": "Ajustement", "famille": FamilleSource.LOGISTIQUE},
+    "CASSE": {"nom": "Casse", "famille": FamilleSource.INCIDENTS},
+    "PEREMPTION": {"nom": "Péremption", "famille": FamilleSource.INCIDENTS},
+    "VOL": {"nom": "Vol", "famille": FamilleSource.INCIDENTS},
+    "PERTE": {"nom": "Perte", "famille": FamilleSource.INCIDENTS},
+    "CORRECTION": {"nom": "Correction", "famille": FamilleSource.TECHNIQUE},
+    "AUTRE": {"nom": "Autre", "famille": FamilleSource.AUTRE},
 }
 
 

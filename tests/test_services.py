@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.test import TestCase
 from stocks.models import (
     TypeArticle, Unite, ComportementArticle, Article,
-    Depot, SourceOperation, Valorisation, JournalStock,
+    Depot, SourceOperation, MouvementStock, Valorisation, JournalStock,
 )
 from stocks.services import (
     ArticleService, MouvementStockService, ValorisationService,
@@ -139,6 +139,41 @@ class MouvementStockServiceTest(TestCase):
             article=self.article, depot=self.depot_a,
         )
         self.assertEqual(valorisation.cout_unitaire_moyen, Decimal("1.50"))
+
+
+    def test_entree_quantite_zero_ou_negatif_refuse(self):
+        with self.assertRaises(ValueError):
+            MouvementStockService.entree_stock(
+                article=self.article, depot=self.depot_a,
+                quantite=0, source_operation=self.src_achat,
+            )
+        with self.assertRaises(ValueError):
+            MouvementStockService.entree_stock(
+                article=self.article, depot=self.depot_a,
+                quantite=-5, source_operation=self.src_achat,
+            )
+
+    def test_sortie_quantite_zero_ou_negatif_refuse(self):
+        with self.assertRaises(ValueError):
+            MouvementStockService.sortie_stock(
+                article=self.article, depot=self.depot_a,
+                quantite=0, source_operation=self.src_vente,
+            )
+        with self.assertRaises(ValueError):
+            MouvementStockService.sortie_stock(
+                article=self.article, depot=self.depot_a,
+                quantite=-5, source_operation=self.src_vente,
+            )
+
+    def test_reference_externe_trackee(self):
+        MouvementStockService.entree_stock(
+            article=self.article, depot=self.depot_a,
+            quantite=10, prix_unitaire=Decimal("5.00"),
+            source_operation=self.src_achat,
+            reference_externe="FAC-2026-001254",
+        )
+        mvt = MouvementStock.objects.get(article=self.article)
+        self.assertEqual(mvt.reference_externe, "FAC-2026-001254")
 
 
 class ValorisationServiceTest(TestCase):

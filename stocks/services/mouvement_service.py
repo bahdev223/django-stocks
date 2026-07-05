@@ -19,9 +19,15 @@ class MouvementStockService:
         libelle="",
         source_operation=None,
         reference=None,
+        reference_externe="",
         source=None,
         created_by="",
     ):
+        qte = Decimal(quantite)
+        if qte <= 0:
+            raise ValueError(
+                f"Quantité d'entrée doit être strictement positive : {qte}"
+            )
         if reference is None:
             reference = f"E-{timezone.now().strftime('%Y%m%d%H%M%S%f')}-{article.id}"
 
@@ -30,14 +36,15 @@ class MouvementStockService:
             nature=NatureMouvement.ENTREE,
             article=article,
             depot=depot,
-            quantite=abs(Decimal(quantite)),
+            quantite=qte,
             prix_unitaire=prix_unitaire,
-            cout_total=abs(Decimal(quantite)) * prix_unitaire if prix_unitaire else None,
+            cout_total=qte * prix_unitaire if prix_unitaire else None,
             date_mouvement=timezone.now(),
             libelle=libelle,
             emplacement=emplacement,
             lot=lot,
             source_operation=source_operation,
+            reference_externe=reference_externe,
             created_by=created_by,
             valide=True,
         )
@@ -46,7 +53,7 @@ class MouvementStockService:
         mouvement.save()
         _journaliser(mouvement, created_by)
         if prix_unitaire:
-            _mettre_a_jour_valorisation(article, depot, abs(Decimal(quantite)), prix_unitaire)
+            _mettre_a_jour_valorisation(article, depot, qte, prix_unitaire)
         return mouvement
 
     @staticmethod
@@ -61,13 +68,18 @@ class MouvementStockService:
         libelle="",
         source_operation=None,
         reference=None,
+        reference_externe="",
         source=None,
         created_by="",
     ):
+        qte = Decimal(quantite)
+        if qte <= 0:
+            raise ValueError(
+                f"Quantité de sortie doit être strictement positive : {qte}"
+            )
         if reference is None:
             reference = f"S-{timezone.now().strftime('%Y%m%d%H%M%S%f')}-{article.id}"
 
-        qte = abs(Decimal(quantite))
         if _stock_article_depot(article, depot) < qte:
             raise ValueError(
                 f"Stock insuffisant pour {article.code} @ {depot.code}: "
@@ -87,6 +99,7 @@ class MouvementStockService:
             emplacement=emplacement,
             lot=lot,
             source_operation=source_operation,
+            reference_externe=reference_externe,
             created_by=created_by,
             valide=True,
         )
@@ -105,13 +118,19 @@ class MouvementStockService:
         quantite,
         lot=None,
         libelle="",
+        reference_externe="",
         source=None,
         created_by="",
     ):
         now_str = timezone.now().strftime('%Y%m%d%H%M%S%f')
         qte = abs(Decimal(quantite))
+        if qte <= 0:
+            raise ValueError(
+                f"Quantité de transfert doit être strictement positive : {qte}"
+            )
         src_op, _ = SourceOperation.objects.get_or_create(
-            code="TRANSFERT", defaults={"nom": "Transfert", "systeme": True},
+            code="TRANSFERT",
+            defaults={"nom": "Transfert", "famille": "LOGISTIQUE", "systeme": True},
         )
 
         if _stock_article_depot(article, depot_source) < qte and lot is None:
@@ -132,6 +151,7 @@ class MouvementStockService:
             lot=lot,
             libelle=libelle or f"Transfert vers {depot_destination.libelle}",
             source_operation=src_op,
+            reference_externe=reference_externe,
             reference=f"TRF-S-{now_str}-{article.id}",
             source=source,
             created_by=created_by,
@@ -145,6 +165,7 @@ class MouvementStockService:
             prix_unitaire=sortie.prix_unitaire,
             libelle=libelle or f"Transfert depuis {depot_source.libelle}",
             source_operation=src_op,
+            reference_externe=reference_externe,
             reference=f"TRF-E-{now_str}-{article.id}",
             source=source,
             created_by=created_by,

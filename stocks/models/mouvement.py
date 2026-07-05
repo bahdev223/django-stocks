@@ -47,6 +47,10 @@ class MouvementStock(models.Model):
         related_name="mouvements",
         verbose_name="Opération source",
     )
+    reference_externe = models.CharField(
+        max_length=255, blank=True, verbose_name="Réf. externe",
+        help_text="Référence libre du document métier (ex: FAC-2026-001254)",
+    )
     quantite = models.DecimalField(
         max_digits=18, decimal_places=6, verbose_name="Quantité",
     )

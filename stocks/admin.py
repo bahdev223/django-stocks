@@ -38,8 +38,8 @@ class ComportementArticleAdmin(admin.ModelAdmin):
 
 @admin.register(SourceOperation)
 class SourceOperationAdmin(admin.ModelAdmin):
-    list_display = ["code", "nom", "active", "systeme"]
-    list_filter = ["active", "systeme"]
+    list_display = ["code", "nom", "famille", "active", "systeme"]
+    list_filter = ["active", "systeme", "famille"]
     search_fields = ["code", "nom"]
 
 
@@ -90,11 +90,16 @@ class NumeroSerieAdmin(admin.ModelAdmin):
 class MouvementStockAdmin(admin.ModelAdmin):
     list_display = [
         "reference", "nature", "article", "depot",
-        "quantite", "prix_unitaire", "date_mouvement", "source_op", "valide",
+        "quantite", "prix_unitaire", "date_mouvement",
+        "ref_ext", "source_op", "valide",
     ]
     list_filter = ["nature", "source_operation", "valide", "date_mouvement"]
     search_fields = ["reference", "article__code", "libelle"]
     autocomplete_fields = ["article", "depot", "lot", "source_operation"]
+
+    def ref_ext(self, obj):
+        return obj.reference_externe
+    ref_ext.short_description = "Réf. ext."
 
     def source_op(self, obj):
         return obj.source_operation.code if obj.source_operation else ""
