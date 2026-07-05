@@ -18,16 +18,6 @@ class NatureMouvement(models.TextChoices):
     SORTIE = "SORTIE", "Sortie"
     TRANSFERT = "TRANSFERT", "Transfert"
     AJUSTEMENT = "AJUSTEMENT", "Ajustement"
-    INVENTAIRE = "INVENTAIRE", "Inventaire"
-    PRODUCTION = "PRODUCTION", "Production"
-    CONSOMMATION = "CONSOMMATION", "Consommation"
-    RETOUR = "RETOUR", "Retour"
-    REBUT = "REBUT", "Mise au rebut"
-
-
-class SensMouvement(models.TextChoices):
-    ENTREE = "ENTREE", "Entrée"
-    SORTIE = "SORTIE", "Sortie"
 
 
 class MethodeValorisation(models.TextChoices):
@@ -55,6 +45,29 @@ class StatutInventaire(models.TextChoices):
     ANNULE = "ANNULE", "Annulé"
 
 
+SOURCES_SYSTEME = {
+    "ACHAT": "Achat",
+    "VENTE": "Vente",
+    "PRODUCTION": "Production",
+    "CONSOMMATION_INTERNE": "Consommation interne",
+    "TRANSFERT": "Transfert",
+    "INVENTAIRE": "Inventaire",
+    "AJUSTEMENT": "Ajustement",
+    "RETOUR_CLIENT": "Retour client",
+    "RETOUR_FOURNISSEUR": "Retour fournisseur",
+    "DON": "Don",
+    "CASSE": "Casse",
+    "PERTE": "Perte",
+    "VOL": "Vol",
+    "PEREMPTION": "Péremption",
+    "CORRECTION": "Correction",
+    "INITIALISATION": "Initialisation",
+    "IMPORT": "Import",
+    "EXPORT": "Export",
+    "AUTRE": "Autre",
+}
+
+
 COMPORTEMENT_PAR_DEFAUT = {
     "stockable": True,
     "vendable": True,
@@ -63,17 +76,4 @@ COMPORTEMENT_PAR_DEFAUT = {
     "lot_obligatoire": False,
     "numero_serie": False,
     "inventoriable": True,
-}
-
-
-SENS_PAR_NATURE = {
-    NatureMouvement.ENTREE: SensMouvement.ENTREE,
-    NatureMouvement.SORTIE: SensMouvement.SORTIE,
-    NatureMouvement.TRANSFERT: SensMouvement.SORTIE,
-    NatureMouvement.AJUSTEMENT: SensMouvement.ENTREE,
-    NatureMouvement.INVENTAIRE: SensMouvement.ENTREE,
-    NatureMouvement.PRODUCTION: SensMouvement.ENTREE,
-    NatureMouvement.CONSOMMATION: SensMouvement.SORTIE,
-    NatureMouvement.RETOUR: SensMouvement.ENTREE,
-    NatureMouvement.REBUT: SensMouvement.SORTIE,
 }

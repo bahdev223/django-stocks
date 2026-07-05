@@ -39,6 +39,14 @@ class MouvementStock(models.Model):
         related_name="mouvements",
         verbose_name="Lot",
     )
+    source_operation = models.ForeignKey(
+        "SourceOperation",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="mouvements",
+        verbose_name="Opération source",
+    )
     quantite = models.DecimalField(
         max_digits=18, decimal_places=6, verbose_name="Quantité",
     )
@@ -84,4 +92,5 @@ class MouvementStock(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.reference} — {self.nature} {self.quantite} x {self.article.code}"
+        src = f" [{self.source_operation.code}]" if self.source_operation else ""
+        return f"{self.reference} — {self.nature} {self.quantite} x {self.article.code}{src}"

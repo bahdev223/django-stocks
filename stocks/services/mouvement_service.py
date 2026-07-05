@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 from stocks.constants import NatureMouvement
-from stocks.models import MouvementStock, Valorisation, JournalStock
+from stocks.models import MouvementStock, SourceOperation, Valorisation, JournalStock
 
 
 class MouvementStockService:
@@ -17,7 +17,7 @@ class MouvementStockService:
         lot=None,
         emplacement=None,
         libelle="",
-        nature=NatureMouvement.ENTREE,
+        source_operation=None,
         reference=None,
         source=None,
         created_by="",
@@ -27,7 +27,7 @@ class MouvementStockService:
 
         mouvement = MouvementStock(
             reference=reference,
-            nature=nature,
+            nature=NatureMouvement.ENTREE,
             article=article,
             depot=depot,
             quantite=abs(Decimal(quantite)),
@@ -37,6 +37,7 @@ class MouvementStockService:
             libelle=libelle,
             emplacement=emplacement,
             lot=lot,
+            source_operation=source_operation,
             created_by=created_by,
             valide=True,
         )
@@ -58,7 +59,7 @@ class MouvementStockService:
         lot=None,
         emplacement=None,
         libelle="",
-        nature=NatureMouvement.SORTIE,
+        source_operation=None,
         reference=None,
         source=None,
         created_by="",
@@ -67,16 +68,15 @@ class MouvementStockService:
             reference = f"S-{timezone.now().strftime('%Y%m%d%H%M%S%f')}-{article.id}"
 
         qte = abs(Decimal(quantite))
-        stock_actuel = _stock_article_depot(article, depot)
-        if stock_actuel < qte:
+        if _stock_article_depot(article, depot) < qte:
             raise ValueError(
                 f"Stock insuffisant pour {article.code} @ {depot.code}: "
-                f"demandé {qte}, disponible {stock_actuel}"
+                f"demandé {qte}, disponible {_stock_article_depot(article, depot)}"
             )
 
         mouvement = MouvementStock(
             reference=reference,
-            nature=nature,
+            nature=NatureMouvement.SORTIE,
             article=article,
             depot=depot,
             quantite=-qte,
@@ -86,6 +86,7 @@ class MouvementStockService:
             libelle=libelle,
             emplacement=emplacement,
             lot=lot,
+            source_operation=source_operation,
             created_by=created_by,
             valide=True,
         )
@@ -109,6 +110,9 @@ class MouvementStockService:
     ):
         now_str = timezone.now().strftime('%Y%m%d%H%M%S%f')
         qte = abs(Decimal(quantite))
+        src_op, _ = SourceOperation.objects.get_or_create(
+            code="TRANSFERT", defaults={"nom": "Transfert", "systeme": True},
+        )
 
         if _stock_article_depot(article, depot_source) < qte and lot is None:
             raise ValueError(
@@ -127,6 +131,7 @@ class MouvementStockService:
             quantite=qte,
             lot=lot,
             libelle=libelle or f"Transfert vers {depot_destination.libelle}",
+            source_operation=src_op,
             reference=f"TRF-S-{now_str}-{article.id}",
             source=source,
             created_by=created_by,
@@ -139,7 +144,7 @@ class MouvementStockService:
             lot=lot,
             prix_unitaire=sortie.prix_unitaire,
             libelle=libelle or f"Transfert depuis {depot_source.libelle}",
-            nature=NatureMouvement.TRANSFERT,
+            source_operation=src_op,
             reference=f"TRF-E-{now_str}-{article.id}",
             source=source,
             created_by=created_by,
@@ -149,20 +154,11 @@ class MouvementStockService:
 
 
 def _stock_article_depot(article, depot):
-    from django.db.models import Sum, Q
-    entrees = MouvementStock.objects.filter(
+    from django.db.models import Sum
+    total = MouvementStock.objects.filter(
         article=article, depot=depot, valide=True,
-    ).filter(
-        Q(nature__in=["ENTREE", "TRANSFERT", "RETOUR", "PRODUCTION"]) | Q(quantite__gt=0),
     ).aggregate(total=Sum("quantite"))["total"] or Decimal("0")
-
-    sorties = MouvementStock.objects.filter(
-        article=article, depot=depot, valide=True,
-    ).filter(
-        Q(nature__in=["SORTIE", "REBUT", "CONSOMMATION"]) | Q(quantite__lt=0),
-    ).aggregate(total=Sum("quantite"))["total"] or Decimal("0")
-
-    return abs(entrees) - abs(sorties)
+    return total
 
 
 def _journaliser(mouvement, created_by=""):

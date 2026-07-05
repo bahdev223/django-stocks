@@ -50,52 +50,31 @@ class ArticleService:
     @staticmethod
     def get_stock_disponible(article, depot):
         from stocks.models import MouvementStock
-        entrees = MouvementStock.objects.filter(
+        total = MouvementStock.objects.filter(
             article=article, depot=depot, valide=True,
-            nature__in=["ENTREE", "TRANSFERT", "RETOUR", "PRODUCTION"],
         ).aggregate(total=models.Sum("quantite"))["total"] or Decimal("0")
-
-        sorties = MouvementStock.objects.filter(
-            article=article, depot=depot, valide=True,
-            nature__in=["SORTIE", "REBUT", "CONSOMMATION"],
-        ).aggregate(total=models.Sum("quantite"))["total"] or Decimal("0")
-
-        return entrees - abs(sorties)
+        return total
 
     @staticmethod
     def get_stock_global(article):
-        from django.db.models import Sum
         from stocks.models import MouvementStock
-        entrees = MouvementStock.objects.filter(
+        total = MouvementStock.objects.filter(
             article=article, valide=True,
-            nature__in=["ENTREE", "TRANSFERT", "RETOUR", "PRODUCTION"],
-        ).aggregate(total=Sum("quantite"))["total"] or Decimal("0")
-
-        sorties = MouvementStock.objects.filter(
-            article=article, valide=True,
-            nature__in=["SORTIE", "REBUT", "CONSOMMATION"],
-        ).aggregate(total=Sum("quantite"))["total"] or Decimal("0")
-
-        return entrees - sorties
+        ).aggregate(total=models.Sum("quantite"))["total"] or Decimal("0")
+        return total
 
     @staticmethod
     def articles_en_alerte():
-        from django.db.models import Sum, F, Q, OuterRef, Subquery
+        from django.db.models import Sum, F, OuterRef, Subquery
         from stocks.models import MouvementStock
-        sub_entrees = MouvementStock.objects.filter(
+        sub_total = MouvementStock.objects.filter(
             article=OuterRef("pk"), valide=True,
-            type_mouvement__in=["ENTREE", "TRANSFERT"],
-        ).values("article").annotate(total=Sum("quantite")).values("total")
-
-        sub_sorties = MouvementStock.objects.filter(
-            article=OuterRef("pk"), valide=True,
-            type_mouvement__in=["SORTIE", "REBUT"],
         ).values("article").annotate(total=Sum("quantite")).values("total")
 
         articles = Article.objects.filter(
             actif=True, seuil_alerte__isnull=False,
         ).annotate(
-            stock_actuel=Subquery(sub_entrees) - Subquery(sub_sorties),
+            stock_actuel=Subquery(sub_total),
         ).filter(stock_actuel__lte=F("seuil_alerte"))
 
         return articles

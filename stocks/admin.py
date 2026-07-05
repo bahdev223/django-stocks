@@ -1,7 +1,7 @@
 from django.contrib import admin
 from stocks.models import (
     Article, TypeArticle, CategorieArticle, Unite, ComportementArticle,
-    Depot, Emplacement, Lot, NumeroSerie,
+    Depot, Emplacement, Lot, NumeroSerie, SourceOperation,
     MouvementStock,
     Inventaire, LigneInventaire,
     Valorisation, JournalStock,
@@ -34,6 +34,13 @@ class ComportementArticleAdmin(admin.ModelAdmin):
         "perissable", "lot_obligatoire", "numero_serie", "inventoriable",
     ]
     search_fields = ["id"]
+
+
+@admin.register(SourceOperation)
+class SourceOperationAdmin(admin.ModelAdmin):
+    list_display = ["code", "nom", "active", "systeme"]
+    list_filter = ["active", "systeme"]
+    search_fields = ["code", "nom"]
 
 
 @admin.register(Article)
@@ -83,18 +90,15 @@ class NumeroSerieAdmin(admin.ModelAdmin):
 class MouvementStockAdmin(admin.ModelAdmin):
     list_display = [
         "reference", "nature", "article", "depot",
-        "quantite", "prix_unitaire", "date_mouvement", "valide",
-        "source_summary",
+        "quantite", "prix_unitaire", "date_mouvement", "source_op", "valide",
     ]
-    list_filter = ["nature", "valide", "date_mouvement"]
+    list_filter = ["nature", "source_operation", "valide", "date_mouvement"]
     search_fields = ["reference", "article__code", "libelle"]
-    autocomplete_fields = ["article", "depot", "lot"]
+    autocomplete_fields = ["article", "depot", "lot", "source_operation"]
 
-    def source_summary(self, obj):
-        if obj.source:
-            return f"{obj.source._meta.verbose_name} #{obj.source_object_id}"
-        return ""
-    source_summary.short_description = "Source"
+    def source_op(self, obj):
+        return obj.source_operation.code if obj.source_operation else ""
+    source_op.short_description = "Op. source"
 
 
 class LigneInventaireInline(admin.TabularInline):

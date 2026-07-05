@@ -1,91 +1,88 @@
 # django-stocks
 
-Moteur universel de gestion des articles et des mouvements de stock pour Django.
+**Moteur universel de gestion des articles et des mouvements de stock pour Django.**
 
-## Philosophie
+Ce package ne connaît **pas le métier**. Il répond à une seule question :
 
-Ce package ne connaît **pas le métier**. Il ne sait pas s'il travaille pour une école, une boulangerie, un hôpital ou un supermarché.
+> **"Pourquoi la quantité de cet article a-t-elle changé ?"**
 
-Il manipule uniquement :
+Pas *"Quel document métier a provoqué ce changement ?"*
 
-- **Article** (pas `Produit`)
-- **Dépôt** / **Emplacement**
-- **Lot** / **Numéro de série**
-- **Mouvement de stock** (entrée, sortie, transfert, inventaire, rebut)
-- **Valorisation** (PMP, FIFO, DMP)
-- **Journal de stock**
-- **Nomenclature** (BOM pour la production future)
+---
 
-## Concepts clés
+## Architecture
 
-### Article
+Le moteur distingue deux concepts indépendants :
 
-Point d'entrée du modèle. Un article possède :
+| Concept | Rôle | Exemples |
+|---------|------|----------|
+| **Nature du mouvement** | Ce qui arrive au stock | `ENTREE`, `SORTIE`, `TRANSFERT`, `AJUSTEMENT` |
+| **Opération source** | Qui a demandé ce mouvement | `ACHAT`, `VENTE`, `PRODUCTION`, `CASSE`, `DON`, `INVENTAIRE` |
 
-- Un **type** (`MATIERE_PREMIERE`, `PRODUIT_FINI`, `CONSOMMABLE`, `FOURNITURE`, etc.)
-- Un **comportement** (stockable, vendable, achetable, périssable, lot obligatoire, n° de série)
-- Une **méthode de valorisation** (PMP par défaut)
-- Une **catégorie** (arborescente via FK parent)
-- Une **unité** par défaut
+Un mouvement n'est jamais *"une vente"* ou *"un achat"*. Il est :
 
-### Type d'article
+```
+Nature : SORTIE
+Source : VENTE
+```
 
-Classification sémantique qui permet au moteur de s'adapter sans connaître le domaine métier.
+Le stock ignore ce qu'est une vente ou une facture. Il sait seulement qu'un objet externe est à l'origine.
 
-### Comportement
+### Traçabilité
 
-Propriétés qui déterminent comment le moteur traite l'article :
+- **`source_operation`** — FK vers `SourceOperation` (enumération extensible)
+- **`source`** — `GenericForeignKey` (content_type + object_id) vers l'objet métier
 
-| Propriété | Défaut | Description |
-|-----------|--------|-------------|
-| `stockable` | True | Peut être stocké physiquement |
-| `vendable` | True | Peut être vendu |
-| `achetable` | True | Peut être acheté |
-| `perissable` | False | A une date de péremption |
-| `lot_obligatoire` | False | Doit être tracé par lot |
-| `numero_serie` | False | Suivi individuel par N° de série |
-| `inventoriable` | True | Doit être compté en inventaire |
+Les deux peuvent être combinés :
 
-### Mouvements
+| Mouvement | Nature | Source op. | GFK source |
+|-----------|--------|------------|------------|
+| Vente de 4 pains | SORTIE | VENTE | Facture #42 |
+| Réception farine | ENTREE | ACHAT | Réception #7 |
+| Casse bouteille | SORTIE | CASSE | — |
+| Ajustement inventaire | ENTREE | INVENTAIRE | Inventaire #12 |
 
-Quatre opérations de base, implémentées dans `MouvementStockService` :
+---
 
-1. **`entree_stock`** — Réception / achat
-2. **`sortie_stock`** — Vente / consommation
-3. **`transferer`** — Transfert entre dépôts
-4. **`valider_mouvement`** — Validation différée
+## Modèles
 
-Chaque mouvement journalise automatiquement l'écriture dans le `JournalStock` et met à jour la valorisation (PMP).
+| Modèle | Rôle |
+|--------|------|
+| `Article` | Code, désignation, type, catégorie, unité, comportement, valorisation |
+| `TypeArticle` | `MATIERE_PREMIERE`, `PRODUIT_FINI`, `CONSOMMABLE`, etc. |
+| `CategorieArticle` | Arborescence (parent/enfant) |
+| `Unite` | KG, L, UN, etc. |
+| `ComportementArticle` | Drapeaux : stockable, vendable, périssable, lot, N° série |
+| `SourceOperation` | Opération source : `ACHAT`, `VENTE`, `PRODUCTION`, etc. — extensible |
+| `Depot` | Lieu de stockage physique (magasin, boutique, camion, atelier) |
+| `Emplacement` | Position dans un dépôt (allée, rayon, casier) |
+| `Lot` | Traçabilité par lot (date péremption, qté restante) |
+| `NumeroSerie` | Suivi individuel par N° de série |
+| `MouvementStock` | Entrée, sortie, transfert, ajustement — avec source op. + GFK |
+| `Inventaire` + `LigneInventaire` | Comptage physique avec validation et ajustement automatique |
+| `Valorisation` | PMP par article/dépôt |
+| `JournalStock` | Audit trail : stock avant/après chaque mouvement |
+| `Nomenclature` / `ComposantNomenclature` | BOM pour production future |
 
-### Valorisation
+---
 
-- Chaque couple `(article, depot)` a une valorisation.
-- La méthode PMP recalcule le prix moyen pondéré à chaque entrée.
-- `ValorisationService` permet de revaloriser et de consulter le stock valorisé.
-
-## Installation
+## Utilisation
 
 ```python
-INSTALLED_APPS = [
-    ...
-    "stocks",
-]
-```
-
-```
-python manage.py migrate stocks
-```
-
-## Utilisation minimale
-
-```python
-from stocks.models import TypeArticle, Unite, ComportementArticle
+from stocks.models import (
+    TypeArticle, Unite, ComportementArticle, Depot, SourceOperation
+)
 from stocks.services import ArticleService, MouvementStockService
 
-# Créer les dépendances
-type_mp = TypeArticle.objects.create(code="MATIERE_PREMIERE", libelle="Matière première")
-unite_kg = Unite.objects.create(code="KG", libelle="Kilogramme")
+# Amorcer les sources système (ACHAT, VENTE, PRODUCTION, …)
+SourceOperation.seed()
+
+# Dépendances
+TypeArticle.objects.create(code="MATIERE_PREMIERE", libelle="Matière première")
+Unite.objects.create(code="KG", libelle="Kilogramme")
 comportement = ComportementArticle.creer_defaut()
+depot = Depot.objects.create(code="MAG", libelle="Magasin principal")
+src_achat = SourceOperation.objects.get(code="ACHAT")
 
 # Créer un article
 farine = ArticleService.creer_article(
@@ -93,27 +90,79 @@ farine = ArticleService.creer_article(
     designation="Farine de blé T55",
     type_article_code="MATIERE_PREMIERE",
     unite_code="KG",
-    comportement=comportement,
 )
 
-# Créer un dépôt
-depot = Depot.objects.create(code="MAG", libelle="Magasin principal")
-
-# Entrée de stock
+# Entrée de stock (Achat)
 MouvementStockService.entree_stock(
     article=farine,
     depot=depot,
     quantite=500,
     prix_unitaire=Decimal("0.85"),
+    source_operation=src_achat,
     libelle="Réception fournisseur",
 )
+
+# Sortie de stock (Production)
+src_prod = SourceOperation.objects.get(code="PRODUCTION")
+MouvementStockService.sortie_stock(
+    article=farine,
+    depot=depot,
+    quantite=30,
+    source_operation=src_prod,
+    libelle="Consommation boulangerie",
+)
+
+# Transfert entre dépôts
+depot_boutique = Depot.objects.create(code="BOU", libelle="Boutique")
+MouvementStockService.transferer(
+    article=farine,
+    depot_source=depot,
+    depot_destination=depot_boutique,
+    quantite=100,
+)
 ```
+
+### Ajouter une source personnalisée
+
+```python
+SourceOperation.objects.create(
+    code="MISSION_HUMANITAIRE",
+    nom="Mission humanitaire",
+    systeme=False,
+)
+```
+
+---
+
+## Intégration avec les modules métier
+
+```python
+from stocks.services import MouvementStockService
+from stocks.models import SourceOperation
+
+# Dans django-ventes
+facture = Facture.objects.get(pk=42)
+MouvementStockService.sortie_stock(
+    article=pain,
+    depot=depot_boutique,
+    quantite=4,
+    source_operation=SourceOperation.objects.get(code="VENTE"),
+    source=facture,                # lien vers l'objet métier via GFK
+    created_by="admin",
+)
+```
+
+---
 
 ## Tests
 
 ```bash
-python -m pytest tests/
+python runtests.py
 ```
+
+23 tests — couvre : Article, entrée/sortie/transfert, stock insuffisant, inventaire (écart +/‑), PMP, journal, nomenclature, NumeroSerie.
+
+---
 
 ## Licence
 
